@@ -8,12 +8,8 @@ root.title('this window has a button')
 root.geometry('600x400')
 
 # add a label
-prompt_label = Label(root, text = 'Do you want the window to explode?')
+prompt_label = Label(root, text='Do you want the window to explode?')
 prompt_label.grid()
-
-# adding in an entry widget
-text_entry = Entry(root, width = 10)
-text_entry.grid(column = 1, row = 0)
 
 # function to be called when button is clicked
 def clicked():
