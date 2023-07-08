@@ -70,14 +70,13 @@ def get_dataframe(x_train, y_train):
     df = pd.DataFrame(scores, columns=['model', 'best_score', 'best_params'])
     return df
 
+from sklearn import datasets
+iris = datasets.load_digits()
 
-from sklearn import svm, datasets
-iris = datasets.load_iris()
-
+import pandas as pd
 df = pd.DataFrame(iris.data,columns=iris.feature_names)
 df['flower'] = iris.target
 df['flower'] = df['flower'].apply(lambda x: iris.target_names[x])
-df[47:52]
+
 
 df = get_dataframe(iris.data, iris.target)
-df.head()
