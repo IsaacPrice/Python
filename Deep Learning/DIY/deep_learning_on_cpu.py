@@ -28,11 +28,11 @@ def normalize(X):
     return (X - min_vals) / (max_vals - min_vals)
 
 def one_hot_encode(y):
-    classes = np.unique(y)
+    classes, y_indices = np.unique(y, return_inverse=True)
     y_encoded = np.zeros((len(y), len(classes)))
 
-    for i, label in enumerate(y):
-        y_encoded[i, label] = 1
+    for i, label_index in enumerate(y_indices):
+        y_encoded[i, label_index] = 1
 
     return y_encoded
 
