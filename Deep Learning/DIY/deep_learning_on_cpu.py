@@ -1,10 +1,9 @@
 import numpy as np
-import pandas as pd
 
-# Softmax function (This is the alternate to the sigmoid, as this is multi-class)
+# Softmax function
 def softmax(x):
     e_x = np.exp(x - np.max(x))
-    return e_x / (e_x.sum(axis=0) + 1e-9)
+    return e_x / e_x.sum(axis=0)
 
 # Derivative of sigmoid function
 def sigmoid_derivative(x):
@@ -16,23 +15,26 @@ def manual_train_test_split(X, y, test_size=0.2):
     test_indices = np.random.choice(indices, size=int(X.shape[0]*test_size), replace=False)
     train_indices = np.array(list(set(indices) - set(test_indices)))
 
-    X_train = X.iloc[train_indices]
-    X_test = X.iloc[test_indices]
-
-    y_train = y.iloc[train_indices]
-    y_test = y.iloc[test_indices]
+    X_train = X[train_indices]
+    X_test = X[test_indices]
+    y_train = y[train_indices]
+    y_test = y[test_indices]
 
     return X_train, X_test, y_train, y_test
 
-def normalize(df):
-    result = df.copy()
-    for feature_name in df.columns:
-        if df[feature_name].dtype in ['int16', 'int32', 'int64', 'float16', 'float32', 'float64']:
-            max_value = df[feature_name].max()
-            min_value = df[feature_name].min()
-            result[feature_name] = (df[feature_name] - min_value) / (max_value - min_value)
-    return result
+def normalize(X):
+    min_vals = np.min(X, axis=0)
+    max_vals = np.max(X, axis=0)
+    return (X - min_vals) / (max_vals - min_vals)
 
+def one_hot_encode(y):
+    classes = np.unique(y)
+    y_encoded = np.zeros((len(y), len(classes)))
+
+    for i, label in enumerate(y):
+        y_encoded[i, label] = 1
+
+    return y_encoded
 
 class multi_classification:
     def __init__(self, weight_decay=0.001):
@@ -40,7 +42,7 @@ class multi_classification:
         print("Successfully created empty model")
     
     def fit(self, X_train, y_train):
-        self.classes = len(y_train.columns)
+        self.classes = y_train.shape[1]
 
         np.random.seed(1)
 
@@ -51,9 +53,6 @@ class multi_classification:
         # Initialize weights randomly with mean 0
         self.synaptic_weights_1 = 2 * np.random.random((input_nodes, hidden_nodes)) - 1
         self.synaptic_weights_2 = 2 * np.random.random((hidden_nodes, self.classes)) - 1
-
-        X_train = X_train.to_numpy()
-        y_train = y_train.to_numpy()
 
         for iteration in range(10000):
             # Forward propagation
@@ -80,58 +79,34 @@ class multi_classification:
         return "Finished Fitting Successfully"
 
     def predict(self, X):
-        # This will predict the given data
-        X = X.to_numpy()
         new_layer_0 = X
         new_layer_1 = 1 / (1 + np.exp(-(np.dot(new_layer_0, self.synaptic_weights_1))))  # sigmoid
         new_layer_2 = softmax(np.dot(new_layer_1, self.synaptic_weights_2))
-
         return new_layer_2
 
-
     def score(self, X_test, y_test):
-        # This will go through and predict the values for each value and compare to the answers and get the average to return
-        new_layer_0 = X_test.to_numpy()
+        new_layer_0 = X_test
         new_layer_1 = 1 / (1 + np.exp(-(np.dot(new_layer_0, self.synaptic_weights_1))))  # sigmoid
         new_layer_2 = softmax(np.dot(new_layer_1, self.synaptic_weights_2))
 
-        # find the class with the  highest probability for each example in the predictions
         predictions = np.argmax(new_layer_2, axis=1)
+        actual = np.argmax(y_test, axis=1)
 
-        # find the actual class for each example in the test set
-        actual = np.argmax(y_test.to_numpy(), axis=1)
-
-        # calculate the accuracy: the proportion of predictions that exactly match the actual classes
         accuracy = np.mean(predictions == actual)
-
         return accuracy
 
+data = np.genfromtxt('WineQuality.csv', delimiter=',', skip_header=1)
 
-
-# Creating the data frame
-df = pd.read_csv("WineQuality.csv")
-
-# Sorting the data into whats neccisary
-df = df.drop('Unnamed: 0', axis='columns')
-dummies = pd.get_dummies(df.Type)
-df = df.drop('Type', axis='columns')
-df.dropna(inplace=True)
-#df = pd.concat([df, dummies], axis='columns')
-
-# Seperating the key from the values
-X = df.drop('quality', axis='columns')
-y = pd.get_dummies(df.quality)
+X = data[:, 1:-1]  # Assuming the first column is an index like 'Unnamed: 0' and the last column is the target
+y = data[:, -1].astype(int)
 
 X = normalize(X)
+y = one_hot_encode(y)
 
-# splitting the data into train and test
 X_train, X_test, y_train, y_test = manual_train_test_split(X, y)
 
-# Finally creating the model
 model = multi_classification()
 
-# Fit the data to the model
 model.fit(X_train, y_train)
 
-# get the score
 print(model.score(X_test, y_test))
